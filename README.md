@@ -232,6 +232,251 @@ cast call 0x5FbDB2315678afecb367f032d93F642f64180aa3 "ownerOf(uint256)" 1 --rpc-
 cast call 0x5FbDB2315678afecb367f032d93F642f64180aa3 "balanceOf(address)" 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 --rpc-url http://localhost:8545
 ```
 
+#### Usando TypeScript/JavaScript (ethers.js)
+
+**Instalación de dependencias:**
+```bash
+npm install ethers
+npm install -D @types/node typescript ts-node
+```
+
+**Código TypeScript completo:**
+
+```typescript
+import { ethers } from 'ethers';
+
+// Configuración del contrato
+const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Dirección del contrato desplegado
+const RPC_URL = 'http://localhost:8545'; // URL del RPC
+const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; // Clave privada del owner
+
+// ABI del contrato (solo las funciones que necesitamos)
+const CONTRACT_ABI = [
+  // Funciones de lectura
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function owner() view returns (address)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function paused() view returns (bool)",
+  "function totalSupply() view returns (uint256)",
+  
+  // Funciones de escritura
+  "function safeMint(address to, uint256 tokenId)",
+  "function pause()",
+  "function unpause()",
+  "function burn(uint256 tokenId)",
+  "function transferFrom(address from, address to, uint256 tokenId)",
+  
+  // Eventos
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "event Paused(address account)",
+  "event Unpaused(address account)"
+];
+
+class MyTokenClient {
+  private provider: ethers.Provider;
+  private wallet: ethers.Wallet;
+  private contract: ethers.Contract;
+
+  constructor(contractAddress: string, rpcUrl: string, privateKey: string) {
+    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.wallet = new ethers.Wallet(privateKey, this.provider);
+    this.contract = new ethers.Contract(contractAddress, CONTRACT_ABI, this.wallet);
+  }
+
+  // Funciones de lectura
+  async getName(): Promise<string> {
+    return await this.contract.name();
+  }
+
+  async getSymbol(): Promise<string> {
+    return await this.contract.symbol();
+  }
+
+  async getOwner(): Promise<string> {
+    return await this.contract.owner();
+  }
+
+  async getOwnerOf(tokenId: number): Promise<string> {
+    return await this.contract.ownerOf(tokenId);
+  }
+
+  async getBalanceOf(address: string): Promise<bigint> {
+    return await this.contract.balanceOf(address);
+  }
+
+  async isPaused(): Promise<boolean> {
+    return await this.contract.paused();
+  }
+
+  async getTotalSupply(): Promise<bigint> {
+    return await this.contract.totalSupply();
+  }
+
+  // Funciones de escritura
+  async safeMint(to: string, tokenId: number): Promise<ethers.TransactionResponse> {
+    const tx = await this.contract.safeMint(to, tokenId);
+    console.log(`Minting token ${tokenId} to ${to}...`);
+    console.log(`Transaction hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`Token ${tokenId} minted successfully!`);
+    return tx;
+  }
+
+  async pause(): Promise<ethers.TransactionResponse> {
+    const tx = await this.contract.pause();
+    console.log('Pausing contract...');
+    console.log(`Transaction hash: ${tx.hash}`);
+    await tx.wait();
+    console.log('Contract paused successfully!');
+    return tx;
+  }
+
+  async unpause(): Promise<ethers.TransactionResponse> {
+    const tx = await this.contract.unpause();
+    console.log('Unpausing contract...');
+    console.log(`Transaction hash: ${tx.hash}`);
+    await tx.wait();
+    console.log('Contract unpaused successfully!');
+    return tx;
+  }
+
+  async burn(tokenId: number): Promise<ethers.TransactionResponse> {
+    const tx = await this.contract.burn(tokenId);
+    console.log(`Burning token ${tokenId}...`);
+    console.log(`Transaction hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`Token ${tokenId} burned successfully!`);
+    return tx;
+  }
+
+  async transferFrom(from: string, to: string, tokenId: number): Promise<ethers.TransactionResponse> {
+    const tx = await this.contract.transferFrom(from, to, tokenId);
+    console.log(`Transferring token ${tokenId} from ${from} to ${to}...`);
+    console.log(`Transaction hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`Token ${tokenId} transferred successfully!`);
+    return tx;
+  }
+
+  // Función para escuchar eventos
+  async listenToEvents() {
+    console.log('Listening to contract events...');
+    
+    this.contract.on('Transfer', (from, to, tokenId, event) => {
+      console.log(`Transfer event: Token ${tokenId} from ${from} to ${to}`);
+    });
+
+    this.contract.on('Paused', (account, event) => {
+      console.log(`Paused event: Contract paused by ${account}`);
+    });
+
+    this.contract.on('Unpaused', (account, event) => {
+      console.log(`Unpaused event: Contract unpaused by ${account}`);
+    });
+  }
+
+  // Función para obtener información completa del contrato
+  async getContractInfo(): Promise<void> {
+    console.log('\n=== CONTRACT INFORMATION ===');
+    console.log(`Name: ${await this.getName()}`);
+    console.log(`Symbol: ${await this.getSymbol()}`);
+    console.log(`Owner: ${await this.getOwner()}`);
+    console.log(`Paused: ${await this.isPaused()}`);
+    console.log(`Total Supply: ${await this.getTotalSupply()}`);
+    console.log('=============================\n');
+  }
+}
+
+// Función principal de ejemplo
+async function main() {
+  try {
+    // Crear instancia del cliente
+    const tokenClient = new MyTokenClient(CONTRACT_ADDRESS, RPC_URL, PRIVATE_KEY);
+    
+    // Obtener información del contrato
+    await tokenClient.getContractInfo();
+    
+    // Escuchar eventos
+    await tokenClient.listenToEvents();
+    
+    // Ejemplo de uso: Mint un token
+    const userAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+    const tokenId = 1;
+    
+    // Verificar si el token ya existe
+    try {
+      const owner = await tokenClient.getOwnerOf(tokenId);
+      console.log(`Token ${tokenId} already exists, owner: ${owner}`);
+    } catch (error) {
+      // Token no existe, podemos hacer mint
+      await tokenClient.safeMint(userAddress, tokenId);
+    }
+    
+    // Verificar el propietario del token
+    const owner = await tokenClient.getOwnerOf(tokenId);
+    console.log(`Token ${tokenId} owner: ${owner}`);
+    
+    // Verificar balance del usuario
+    const balance = await tokenClient.getBalanceOf(userAddress);
+    console.log(`User ${userAddress} balance: ${balance}`);
+    
+    // Ejemplo: Pausar el contrato
+    // await tokenClient.pause();
+    
+    // Ejemplo: Despausar el contrato
+    // await tokenClient.unpause();
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// Ejecutar si es el archivo principal
+if (require.main === module) {
+  main().catch(console.error);
+}
+
+export { MyTokenClient };
+```
+
+**Archivo package.json:**
+```json
+{
+  "name": "mytoken-client",
+  "version": "1.0.0",
+  "description": "TypeScript client for MyToken ERC721 contract",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "build": "tsc",
+    "dev": "ts-node --watch index.ts"
+  },
+  "dependencies": {
+    "ethers": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  }
+}
+```
+
+**Uso del cliente:**
+```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar el script
+npm start
+
+# O compilar y ejecutar
+npm run build
+node dist/index.js
+```
+
 ## 📊 Gas Usage
 
 | Función | Gas Cost |
