@@ -4,9 +4,9 @@
   "description": "TypeScript client for MyToken ERC721 contract",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "npx tsx src/index.ts",
     "build": "tsc",
-    "dev": "ts-node --watch src/index.ts",
+    "dev": "npx tsx watch src/index.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

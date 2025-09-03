@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { MyTokenClient, MyTokenConfig } from './MyTokenClient';
 
 // Configuración del contrato

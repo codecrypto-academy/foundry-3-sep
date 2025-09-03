@@ -9,7 +9,6 @@ export const CONTRACT_ABI = [
   "function ownerOf(uint256 tokenId) view returns (address)",
   "function balanceOf(address owner) view returns (uint256)",
   "function paused() view returns (bool)",
-  "function totalSupply() view returns (uint256)",
   
   // Funciones de escritura
   "function safeMint(address to, uint256 tokenId)",
@@ -67,7 +66,12 @@ export class MyTokenClient {
   }
 
   async getTotalSupply(): Promise<bigint> {
-    return await this.contract.totalSupply();
+    try {
+      return await this.contract.totalSupply();
+    } catch (error) {
+      console.log('totalSupply() not implemented in this contract');
+      return BigInt(0);
+    }
   }
 
   // Funciones de escritura
@@ -140,7 +144,14 @@ export class MyTokenClient {
     console.log(`Symbol: ${await this.getSymbol()}`);
     console.log(`Owner: ${await this.getOwner()}`);
     console.log(`Paused: ${await this.isPaused()}`);
-    console.log(`Total Supply: ${await this.getTotalSupply()}`);
+    
+    try {
+      const totalSupply = await this.getTotalSupply();
+      console.log(`Total Supply: ${totalSupply}`);
+    } catch (error) {
+      console.log(`Total Supply: Not implemented in this contract`);
+    }
+    
     console.log('=============================\n');
   }
 
